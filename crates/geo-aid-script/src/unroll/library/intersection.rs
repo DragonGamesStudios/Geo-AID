@@ -1,6 +1,8 @@
 //! The `intersection` function
 
-use crate::math::Build;
+use num_traits::One;
+
+use crate::{math::Build, token::number::ProcNum};
 
 use super::prelude::*;
 
@@ -21,6 +23,25 @@ fn intersection_function_ll(
     expr
 }
 
+/// `intesection(line, circle)` - intersection of two lines.
+fn intersection_function_lc(
+    k: Expr<Line>,
+    omega: Expr<Circle>,
+    context: &mut CompileContext,
+    display: Properties,
+) -> Expr<Point> {
+    let mut point = context.free_point_display(display);
+    
+    context.point_on_line(&point, &k, ProcNum::one());
+    context.point_on_circle(&point, &omega, ProcNum::one());
+
+    if let Some(node) = &mut point.node {
+        node.set_associated(Associated);
+    }
+
+    point
+}
+
 /// The associated data. No properties.
 #[derive(Debug)]
 pub struct Associated;
@@ -37,5 +58,5 @@ impl BuildAssociated<PointNode> for Associated {
 
 /// Register the function
 pub fn register(library: &mut Library) {
-    library.add(Function::new("intersection").overload(intersection_function_ll));
+    library.add(Function::new("intersection").overload(intersection_function_ll).overload(intersection_function_lc));
 }
