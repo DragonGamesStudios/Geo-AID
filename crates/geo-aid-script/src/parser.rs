@@ -885,7 +885,7 @@ impl<T: Parse> Parse for Box<T> {
 }
 
 /// A builtin type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Type {
     /// A point
     Point,

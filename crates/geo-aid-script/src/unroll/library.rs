@@ -61,6 +61,8 @@ pub struct Function {
     pub overloads: Vec<Box<dyn Overload>>,
     /// Aliases of this function
     pub aliases: Vec<&'static str>,
+    /// Method aliases of this function
+    pub method_aliases: Vec<(Type, &'static str)>,
 }
 
 impl Function {
@@ -78,6 +80,7 @@ impl Function {
             name,
             overloads: Vec::new(),
             aliases: Vec::new(),
+            method_aliases: Vec::new()
         }
     }
 
@@ -94,6 +97,21 @@ impl Function {
         self.aliases.push(name);
         self
     }
+
+    /// Create an alias for this function
+    #[must_use]
+    pub fn alias_method(mut self, self_type: Type, name: &'static str) -> Self {
+        if name
+            .chars()
+            .any(|c| !c.is_ascii() || !c.is_lowercase() && c.is_alphabetic())
+        {
+            panic!("Function name must be ASCII and lowercase. Received name: {name}");
+        }
+
+        self.method_aliases.push((self_type, name));
+        self
+    }
+
     /// Add a new overload to this function.
     #[must_use]
     pub fn overload<Marker>(mut self, f: impl IntoOverload<Marker>) -> Self {
@@ -415,6 +433,8 @@ pub enum Definition<T> {
 pub struct Library {
     /// Functions
     functions: HashMap<&'static str, Definition<Function>>,
+    /// Methods. Note that methods can only be aliased to functions, never to methods or the other way around.
+    methods: HashMap<Type, HashMap<&'static str, Definition<Function>>>,
     /// The rule operators.
     rule_ops: HashMap<&'static str, Definition<Rule>>,
     /// Bundle types.
@@ -427,6 +447,7 @@ impl Library {
     pub fn new() -> Self {
         let mut library = Self {
             functions: HashMap::new(),
+            methods: HashMap::new(),
             rule_ops: HashMap::new(),
             bundles: HashMap::new(),
         };
@@ -474,6 +495,27 @@ impl Library {
             })
     }
 
+    /// Get the method by its name and self type. If the method doesn't exist,
+    /// return the most similar name if one exists. The search is case-insensitive.
+    pub fn get_method(&self, self_type: Type, name: &str) -> Result<&Function, Option<&'static str>> {
+        let methods = self.methods
+        .get(&self_type).or_else(|| {
+            if matches!(self_type, Type::PointCollection(_)) {
+                self.methods.get(&Type::PointCollection(0))
+            } else {
+                None
+            }
+        }).ok_or(None)?;
+
+        methods
+            .get(name.to_lowercase().as_str())
+            .ok_or_else(|| most_similar(methods.keys().copied(), name))
+            .and_then(|f| match f {
+                Definition::Direct(f) => Ok(f),
+                Definition::Alias(n) => self.get_function(n),
+            })
+    }
+
     /// Get the rule operator by its name. If the rule doesn't exist,
     /// return the most similar name if one exists. The search is case-insensitive.
     pub fn get_rule(&self, name: &str) -> Result<&Rule, Option<&'static str>> {
@@ -498,6 +540,10 @@ impl Addable for Function {
             library
                 .functions
                 .insert(alias, Definition::Alias(self.name));
+        }
+
+        for (t, alias) in mem::take(&mut self.method_aliases) {
+            library.methods.entry(t).or_default().insert(alias, Definition::Alias(self.name));
         }
 
         library

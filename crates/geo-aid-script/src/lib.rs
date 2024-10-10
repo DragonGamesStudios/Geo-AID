@@ -131,7 +131,7 @@ pub enum Error {
         /// Teh method name
         function_name: String,
         /// The potentially intended name.
-        suggested: Option<String>,
+        suggested: Option<&'static str>,
         /// The type the method was searched on.
         on_type: Type,
     },
@@ -714,7 +714,7 @@ const fn unit_count() -> usize {
 }
 
 /// Defines a complex unit: a product of simple units.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Default, Hash)]
 pub struct ComplexUnit([CompExponent; unit_count()]);
 
 /// Unit constants

@@ -125,6 +125,8 @@ pub fn register(library: &mut Library) {
     library.add(
         Function::new("dst")
             .alias("len")
+            .alias("[point collection (2)]::dst")
+            .alias("[point collection (2)]::len")
             .overload(distance_convert_pc)
             .overload(
                 |v: Distance, context: &CompileContext, display: Properties| {
@@ -136,6 +138,9 @@ pub fn register(library: &mut Library) {
                 Distance::from(context.set_unit_display(v.0, unit::DISTANCE, display))
             })
             .overload(distance_function_pp)
+            .overload(|mut col: Pc<2>, context: &CompileContext, props| {
+                distance_function_pp(index!(node col, 0), index!(node col, 1), context, props)
+            })
             .overload(distance_function_pl)
             .overload(
                 |line: Expr<Line>, point: Expr<Point>, context: &CompileContext, display| {

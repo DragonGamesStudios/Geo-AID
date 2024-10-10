@@ -1,6 +1,6 @@
 //! The `Segment` type and function
 
-use crate::{figure::SegmentItem, math::Build, parser::PropertyValue, span, token::StrLit};
+use crate::{figure::SegmentItem, math::Build, parser::PropertyValue, span, token::StrLit, ty};
 
 use super::prelude::*;
 use crate::token::Span;
@@ -107,7 +107,7 @@ pub fn register(library: &mut Library) {
                 })
                 .overload(segment_function_point_point),
         )
-        .add(Function::new("[segment]::len").overload(len));
+        .add(Function::new("len").alias_method(ty::bundle("Segment"), "len").overload(len));
 
     library.bundles.insert("Segment", ["A", "B"].into());
 }

@@ -23,7 +23,7 @@ fn intersection_function_ll(
     expr
 }
 
-/// `intesection(line, circle)` - intersection of two lines.
+/// `intesection(line, circle)` - intersection of a line and a circle.
 fn intersection_function_lc(
     k: Expr<Line>,
     omega: Expr<Circle>,
@@ -31,9 +31,28 @@ fn intersection_function_lc(
     display: Properties,
 ) -> Expr<Point> {
     let mut point = context.free_point_display(display);
-    
+
     context.point_on_line(&point, &k, ProcNum::one());
     context.point_on_circle(&point, &omega, ProcNum::one());
+
+    if let Some(node) = &mut point.node {
+        node.set_associated(Associated);
+    }
+
+    point
+}
+
+/// `intesection(circle, circle)` - intersection of two circle.
+fn intersection_function_cc(
+    o1: Expr<Circle>,
+    o2: Expr<Circle>,
+    context: &mut CompileContext,
+    display: Properties,
+) -> Expr<Point> {
+    let mut point = context.free_point_display(display);
+
+    context.point_on_circle(&point, &o1, ProcNum::one());
+    context.point_on_circle(&point, &o2, ProcNum::one());
 
     if let Some(node) = &mut point.node {
         node.set_associated(Associated);
@@ -58,5 +77,10 @@ impl BuildAssociated<PointNode> for Associated {
 
 /// Register the function
 pub fn register(library: &mut Library) {
-    library.add(Function::new("intersection").overload(intersection_function_ll).overload(intersection_function_lc));
+    library.add(
+        Function::new("intersection")
+            .overload(intersection_function_ll)
+            .overload(intersection_function_lc)
+            .overload(intersection_function_cc),
+    );
 }

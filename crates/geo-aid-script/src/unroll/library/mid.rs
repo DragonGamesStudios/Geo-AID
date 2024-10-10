@@ -1,6 +1,5 @@
 use crate::{
-    parser::Type,
-    unroll::{AnyExpr, Convert},
+    parser::Type, ty, unroll::{AnyExpr, Convert}
 };
 
 use super::{prelude::*, Overload};
@@ -94,5 +93,14 @@ pub fn register(library: &mut Library) {
             })
             .overload(MidScalar)
             .overload(MidPoint),
+    ).add(
+        Function::new("[pc]::mid").alias_method(ty::collection(0), "mid").overload(|mut col: Pc<0>, context: &CompileContext, props| {
+            context.average_p_display(
+                (0..col.0.data.length)
+                    .map(|i| index!(node col, i))
+                    .collect(),
+                props,
+            )
+        })
     );
 }
