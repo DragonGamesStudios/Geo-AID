@@ -438,6 +438,12 @@ pub fn get_intersection(k_ln: Line, l_ln: Line) -> Complex {
     a - b * ((a - c) / d).imaginary / (b / d).imaginary
 }
 
+/// Gets the intersections of a line and a circle
+#[must_use]
+pub fn get_lc_intersections(k: Line, omega: Circle) -> Option<(Complex, Complex)> {
+    todo!()
+}
+
 /// Gets the angle between two arms and the origin
 #[must_use]
 pub fn get_angle(arm1: Complex, origin: Complex, arm2: Complex) -> f64 {

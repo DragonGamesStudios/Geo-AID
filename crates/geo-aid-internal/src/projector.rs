@@ -30,6 +30,12 @@ struct Projector {
     pub circles: Vec<Circle>,
 }
 
+enum SegmentProximity {
+    NearA,
+    NearB,
+    Between
+}
+
 impl Projector {
     /// Gets the intersection points of the line with the picture's frame.
     fn get_line_ends(&self, ln_c: Line) -> (Complex, Complex) {
@@ -94,18 +100,59 @@ impl Projector {
         }
     }
 
+    /// Figure out if a point lies on a segment
+    #[must_use]
+    fn get_segment_proximity((a, b): (Complex, Complex), p: Complex) -> Option<SegmentProximity> {
+        // Identifying the "first" point by the real axis.
+        let (a, b) = if a.real < b.real { (a, b) } else { (b, a) };
+        let ln = geometry::get_line(a, b);
+        let distance = geometry::distance_pt_ln(p, ln);
+
+        if distance < 1e-2 {
+            if geometry::distance_pt_pt(p, a) < 1e-2 {
+                Some(SegmentProximity::NearA)
+            } else if geometry::distance_pt_pt(p, b) < 1e-2 {
+                Some(SegmentProximity::NearB)
+            } else if a.real < p.real && p.real < b.real {
+                Some(SegmentProximity::Between)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Find a good label position for a line.
+    fn get_line_label_position(&self, (a, b): (Position, Position), min_size: f64) -> Position {
+        let (a, b) = (a.into(), b.into());
+        let ln = geometry::get_line(a, b);
+        // Find all points and intersections on this line.
+        // Get either the first, the last or the longest segment.
+        // Place the label in the middle.
+        let mut intersections = Vec::new();
+
+        for &(p, q) in &self.segments {
+            let ln2 = geometry::get_line(p, q);
+            let r = geometry::get_intersection(ln2, ln);
+            if Self::get_segment_proximity((p, q), r).is_some() {
+                intersections.push(r);
+            }
+        }
+
+        for &k in &self.circles {
+            if let Some((a, b)) = geometry::get_lc_intersection(ln, k) {
+                
+            }
+        }
+    }
+
     /// Get the point's label position relative to the point.
     fn get_label_position_rel(&self, point: Complex, min_size: f64) -> Position {
         let mut vectors = Vec::new();
 
         // Checking the lines for proximity.
-        for (a, b) in &self.segments {
-            // Identifying the "first" point by the real axis.
-            let (a, b) = if a.real < b.real { (*a, *b) } else { (*b, *a) };
-
-            let ln = geometry::get_line(a, b);
-            let distance = geometry::distance_pt_ln(point, ln);
-
+        for &(a, b) in &self.segments {
             // Check if the point lies on the line.
             // If so, we have 4 cases:
             // A - point lies close to point A. In that case, we only apply the AB vector.
@@ -113,14 +160,18 @@ impl Projector {
             // C - point lies on the segment AB. In that case, we apply both vectors.
             // D - point lies far from the segment AB. We do nothing.
 
-            if distance < 1e-2 {
-                if geometry::distance_pt_pt(point, a) < 1e-2 {
-                    vectors.push((b - a).normalize());
-                } else if geometry::distance_pt_pt(point, b) < 1e-2 {
-                    vectors.push((a - b).normalize());
-                } else if a.real < point.real && point.real < b.real {
-                    let v = (a - b).normalize();
-                    vectors.extend([v, -v]);
+            if let Some(proximity) = Self::get_segment_proximity((a, b), point) {
+                match proximity {
+                    SegmentProximity::NearA => {
+                        vectors.push((b - a).normalize());
+                    }
+                    SegmentProximity::NearB => {
+                        vectors.push((a - b).normalize());
+                    }
+                    SegmentProximity::Between => {
+                        let v = (a - b).normalize();
+                        vectors.extend([v, -v]);
+                    }
                 }
             }
         }
@@ -630,6 +681,12 @@ pub fn project(figure: Generated, _flags: &Arc<Flags>, canvas_size: (f64, f64)) 
         let pos = point.position;
         if let Some(label) = &mut point.label {
             label.position = pos + projector.get_label_position_rel(pos.into(), min_size);
+        }
+    }
+
+    for ln in rendered.iter_mut().filter_map(Rendered::as_line_mut) {
+        if let Some(label) = &mut ln.label {
+            label.position = projector.get_line_label_position(ln.points, min_size);
         }
     }
 

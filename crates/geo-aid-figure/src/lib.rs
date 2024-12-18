@@ -486,6 +486,16 @@ impl Item {
             _ => None,
         }
     }
+
+    /// If it's a line, returns a mutable reference to it
+    #[must_use]
+    pub fn as_line_mut(&mut self) -> Option<&mut LineItem> {
+        if let Self::Line(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
 }
 
 /// A point item. Usually depicted by a dot.
