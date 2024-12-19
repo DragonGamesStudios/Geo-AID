@@ -130,7 +130,7 @@ impl Projector {
         // Find all points and intersections on this line.
         // Get either the first, the last or the longest segment.
         // Place the label in the middle.
-        let mut intersections = Vec::new();
+        let mut intersections = vec![a, b];
 
         for &(p, q) in &self.segments {
             let ln2 = geometry::get_line(p, q);
@@ -141,8 +141,25 @@ impl Projector {
         }
 
         for &k in &self.circles {
-            if let Some((a, b)) = geometry::get_lc_intersection(ln, k) {
-                
+            if let Some((a, b)) = geometry::get_lc_intersections(ln, k) {
+                intersections.push(a);
+                intersections.push(b);
+            }
+        }
+
+        intersections.sort_by(|a, b| a.real.total_cmp(&b.real).then(a.imaginary.total_cmp(&b.imaginary)));
+
+        // Now the intersections are sorted and we can try to figure out where to put the label.
+
+        let l = intersections.len();
+        if (intersections[0] - intersections[1]).len_squared() > 1000 {
+            (intersections[0], intersections[1])
+        } else if (intersections[l - 2] - intersections[l - 1]).len_squared() > 1000 {
+            (intersections[l - 2], intersections[l - 1])
+        } else {
+            let it = intersections.iter().copied().zip(intersections.iter().copied().skip(1));
+            for (a, b) in it {
+    
             }
         }
     }

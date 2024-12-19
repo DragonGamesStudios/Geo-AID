@@ -441,7 +441,20 @@ pub fn get_intersection(k_ln: Line, l_ln: Line) -> Complex {
 /// Gets the intersections of a line and a circle
 #[must_use]
 pub fn get_lc_intersections(k: Line, omega: Circle) -> Option<(Complex, Complex)> {
-    todo!()
+    let center = (omega.center - k.origin) / k.direction;
+    let d = center.imaginary.abs();
+
+    if d > omega.radius {
+        return None;
+    }
+
+    let diff = (omega.radius * omega.radius - d * d).sqrt();
+
+    let (a, b) = (center.real - diff, center.real + diff);
+    Some((
+        a * k.direction + k.origin,
+        b * k.direction + k.origin
+    ))
 }
 
 /// Gets the angle between two arms and the origin
